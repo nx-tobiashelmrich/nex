@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nex"
+version = "0.1.0"
+description = "A small System One-style decision model on a local Ollama model"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Tobias Helmrich" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/nx-tobiashelmrich/nex"
+
+[project.scripts]
+nex = "nex.cli:main"
+
+[tool.setuptools]
+packages = ["nex"]
+
+[tool.setuptools.package-data]
+nex = ["calibration.json"]

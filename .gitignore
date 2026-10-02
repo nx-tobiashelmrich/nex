@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Local eval output (records, per-run JSON)
+evals/results/
+
+# Local editor, OS, and Claude Code files
+.claude/
+.DS_Store
+.env
+.env.*
+!.env.example

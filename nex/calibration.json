@@ -1,0 +1,32 @@
+{
+  "models": {
+    "qwen3.5:9b": {
+      "choice": {
+        "n": 60,
+        "temperature": 1.0471
+      },
+      "noul": {
+        "n": 60,
+        "temperature": 1.0153
+      },
+      "score": {
+        "n": 50,
+        "temperature": 1.363
+      }
+    },
+    "qwen3:4b-instruct": {
+      "choice": {
+        "n": 60,
+        "temperature": 5.7138
+      },
+      "noul": {
+        "n": 60,
+        "temperature": 6.7817
+      },
+      "score": {
+        "n": 50,
+        "temperature": 11.844
+      }
+    }
+  }
+}
