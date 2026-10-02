@@ -52,7 +52,7 @@ def scripted(messages):
     if "Which team" in text:
         return [("B", math.log(0.5)), (" B", math.log(0.2)), ("A", math.log(0.2)), ("c", math.log(0.1))]
     if "How urgent" in text:
-        return [("2", math.log(0.6)), ("1", math.log(0.3)), ("0", math.log(0.1))]
+        return [("3", math.log(0.6)), ("2", math.log(0.3)), ("1", math.log(0.1))]
     if "upset" in text:
         return [("Yes", math.log(0.8)), (" no", math.log(0.2))]
     return [("A", 0.0)]

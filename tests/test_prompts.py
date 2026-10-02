@@ -43,9 +43,12 @@ class LabelsTest(unittest.TestCase):
         _, labels = build_prompt("s", choice(9))
         self.assertEqual(labels, list("ABCDEFGHJ"))
 
-    def test_score_labels_are_digits(self):
+    def test_score_labels_count_from_one(self):
         _, labels = build_prompt("s", Score("x", ["lo", "hi"]))
-        self.assertEqual(labels, ["0", "1"])
+        self.assertEqual(labels, ["1", "2"])
+        _, labels = build_prompt("s", Score("x", [str(i) for i in range(9)]))
+        self.assertEqual(labels, [str(i) for i in range(1, 10)])
+        # Ten levels do not fit the digits 1 to 9, so they keep 0 to 9.
         _, labels = build_prompt("s", Score("x", [str(i) for i in range(10)]))
         self.assertEqual(labels, [str(i) for i in range(10)])
 
@@ -135,12 +138,18 @@ class OptionLinesTest(unittest.TestCase):
 
     def test_score_options(self):
         user = self.user(Score("How urgent?", ["not urgent", "somewhat", "very"]))
-        self.assertIn("OPTIONS:\n0) not urgent\n1) somewhat\n2) very\n\n", user)
-        self.assertIn("Reply with only the number (0-2) of the level that fits best.", user)
+        self.assertIn("OPTIONS:\n1) not urgent\n2) somewhat\n3) very\n\n", user)
+        self.assertIn("\n\nReply with only the number (1-3) of the level that fits best.", user)
+        self.assertNotIn("numbered from 0", user)
+
+    def test_ten_level_score_says_it_starts_at_zero(self):
+        user = self.user(Score("x", [f"level {i}" for i in range(10)]))
+        self.assertIn("OPTIONS:\n0) level 0\n1) level 1\n", user)
+        self.assertIn("9) level 9\n\nLevels are numbered from 0. Reply with only the number (0-9)", user)
 
     def test_score_object_level(self):
         user = self.user(Score("x", [{"label": "low"}, "high"]))
-        self.assertIn("0) " + json.dumps({"label": "low"}, indent=2) + "\n1) high", user)
+        self.assertIn("1) " + json.dumps({"label": "low"}, indent=2) + "\n2) high", user)
 
     def test_noul_options(self):
         self.assertIn("OPTIONS:\nYes\nNo\n\nReply with only Yes or No.", self.user(Noul("x")))
@@ -200,18 +209,24 @@ class TokenToSlotScoreTest(unittest.TestCase):
     def slot(self, token, n=5):
         return token_to_slot(token, self.q, n)
 
-    def test_digits(self):
+    def test_digits_count_from_one(self):
         for i in range(5):
-            self.assertEqual(self.slot(str(i)), i)
-            self.assertEqual(self.slot(f" {i}"), i)
-            self.assertEqual(self.slot(f"{i})"), i)
-            self.assertEqual(self.slot(f"{i}."), i)
+            self.assertEqual(self.slot(str(i + 1)), i)
+            self.assertEqual(self.slot(f" {i + 1}"), i)
+            self.assertEqual(self.slot(f"{i + 1})"), i)
+            self.assertEqual(self.slot(f"{i + 1}."), i)
 
     def test_out_of_range_digits(self):
-        for token in ["5", "9", " 7"]:
+        for token in ["0", " 0", "6", "9", " 7"]:
             self.assertIsNone(self.slot(token), token)
+        q9 = Score("x", [str(i) for i in range(9)])
+        self.assertEqual(token_to_slot("9", q9, 9), 8)
+        self.assertIsNone(token_to_slot("0", q9, 9))
+
+    def test_ten_levels_count_from_zero(self):
         q10 = Score("x", [str(i) for i in range(10)])
-        self.assertEqual(token_to_slot("9", q10, 10), 9)
+        for i in range(10):
+            self.assertEqual(token_to_slot(str(i), q10, 10), i)
 
     def test_unicode_digits_return_none(self):
         for token in ["₂", "²", "٢", "２", "②", "½"]:

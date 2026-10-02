@@ -84,18 +84,18 @@ A request that breaks any rule below is rejected before the model runs. Errors c
     "tone": {
       "type": "choice",
       "choice": "frustrated",
-      "probabilities": {"calm": 0.0459, "frustrated": 0.6187, "angry": 0.3354},
-      "confidence": 0.428
+      "probabilities": {"calm": 0.0536, "frustrated": 0.5977, "angry": 0.3486},
+      "confidence": 0.3966
     },
     "urgency": {
       "type": "score",
-      "score": 1.9008,
+      "score": 1.8916,
       "legend": {"0": "can wait", "1": "this week", "2": "today"},
-      "probabilities": {"0": 0.0337, "1": 0.0317, "2": 0.9346},
-      "confidence": 0.8512
+      "probabilities": {"0": 0.0406, "1": 0.0271, "2": 0.9322},
+      "confidence": 0.8374
     }
   },
-  "usage": {"input_tokens": 342, "output_tokens": 3}
+  "usage": {"input_tokens": 346, "output_tokens": 3}
 }
 ```
 
@@ -141,7 +141,7 @@ For each question, Nex:
 
 2. **Labels the options with single tokens.**
    - Choice: `A B C D E F G H J K L M N O P Q R S T U`. There is no `I`, because a reply that starts with the pronoun "I" would otherwise count as an option. Option lines read `A) name: description`, or `A) name` for a `null` description. The reply line lists the valid letters.
-   - Score: `0` to `9`, one per level, lines `0) description`.
+   - Score: `1` to `n`, one per level, lines `1) description`. Models read numbers from 1 more reliably than from 0, which made them answer one level too high. A 10-level Score does not fit the digits 1 to 9, so it uses `0` to `9` and the reply line starts with "Levels are numbered from 0.". Either way, level `i` in the response (`legend`, `probabilities`) is the `i`-th level counted from 0.
    - Noul: `Yes` and `No`, followed by the true and false criteria when given.
 
 3. **Reads one next-token distribution.** Nex asks the backend for a single forward pass and the 20 most likely first tokens of the reply with their log-probabilities. Nothing is sampled or generated. The Ollama request is `POST /api/chat` with `stream: false`, `logprobs: true`, `top_logprobs: 20`, `think: false`, `truncate: false`, `keep_alive: "30m"`, and options `num_predict: 1`, `temperature: 0`, `num_ctx: NEX_NUM_CTX`. `think` is dropped for models that refuse it.
@@ -205,7 +205,7 @@ Nex cannot retrain its backbone. Instead it fits one temperature per backend mod
     "qwen3.5:9b": {
       "choice": {"temperature": 1.0471, "n": 60},
       "noul": {"temperature": 1.0153, "n": 60},
-      "score": {"temperature": 1.363, "n": 50}
+      "score": {"temperature": 1.4046, "n": 50}
     }
   }
 }

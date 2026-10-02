@@ -419,7 +419,7 @@ def fake_responder(messages):
         return [("Yes", math.log(0.8)), ("No", math.log(0.2))]
     if "letter" in text:
         return [("B", math.log(0.7)), (" A", math.log(0.2)), ("C", math.log(0.1))]
-    return [("1", math.log(0.6)), ("2", math.log(0.3)), ("0", math.log(0.1))]
+    return [("2", math.log(0.6)), ("3", math.log(0.3)), ("1", math.log(0.1))]
 
 
 class CollectTest(unittest.TestCase):

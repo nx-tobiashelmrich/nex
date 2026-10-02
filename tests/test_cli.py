@@ -49,7 +49,7 @@ def responder(messages):
         return [("Yes", math.log(0.9)), ("No", math.log(0.1))]
     if "letter" in text:
         return [("A", math.log(0.9)), ("B", math.log(0.06)), ("C", math.log(0.04))]
-    return [("0", math.log(0.9)), ("1", math.log(0.06)), ("2", math.log(0.04))]
+    return [("1", math.log(0.9)), ("2", math.log(0.06)), ("3", math.log(0.04))]
 
 
 def run(argv, nex=None):

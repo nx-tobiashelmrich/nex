@@ -11,7 +11,7 @@
       },
       "score": {
         "n": 50,
-        "temperature": 1.363
+        "temperature": 1.4046
       }
     },
     "qwen3:4b-instruct": {
@@ -25,7 +25,7 @@
       },
       "score": {
         "n": 50,
-        "temperature": 11.844
+        "temperature": 10.8964
       }
     }
   }

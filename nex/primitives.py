@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 # Ollama returns at most 20 top logprobs per position, and every option label
 # must be visible in that list, so a Choice can have at most 20 options.
 MAX_CHOICE_OPTIONS = 20
-# Score levels are labelled with the single-token digits 0-9.
+# Score levels are labelled with single-token digits, so at most 10 of them.
 MIN_SCORE_LEVELS = 2
 MAX_SCORE_LEVELS = 10
 # Every question is one backend call, so a request must not fan out without bound.

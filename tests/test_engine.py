@@ -217,7 +217,7 @@ def routed_responder(messages):
     if q == "Which team?":
         return [("B", lp(0.7)), (" B", lp(0.1)), ("A", lp(0.15)), ("C", lp(0.05))]
     if q == "How urgent?":
-        return NextToken([("2", lp(0.6)), ("1", lp(0.3)), ("0", lp(0.1))], prompt_tokens=100, cached_tokens=40)
+        return NextToken([("3", lp(0.6)), ("2", lp(0.3)), ("1", lp(0.1))], prompt_tokens=100, cached_tokens=40)
     if q == "Is this about billing?":
         return NextToken([("No", lp(0.9)), ("Yes", lp(0.1))], prompt_tokens=70, cached_tokens=40)
     if q == "Is the customer angry?":
