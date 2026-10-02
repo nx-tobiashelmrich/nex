@@ -23,8 +23,8 @@ response = nex.system_one(
     },
 )
 response.nouls["billing"].noul       # 0.981
-response.choices["tone"].choice      # "frustrated" (p 0.62, confidence 0.43)
-response.scores["urgency"].score     # 1.90, on levels 0 = can wait ... 2 = today
+response.choices["tone"].choice      # "frustrated" (p 0.60, confidence 0.40)
+response.scores["urgency"].score     # 1.89, on levels 0 = can wait ... 2 = today
 ```
 
 ## How it works
@@ -45,7 +45,7 @@ calibrate: p_i ** (1 / T), with T fitted per model and question type
 typed answer: choice / score / noul, probabilities, confidence
 ```
 
-- Every option gets a single-token label: letters for Choice (`A` to `U`, skipping `I` so a reply starting with the pronoun cannot count as an option), `0` to `9` for Score, `Yes`/`No` for Noul. The answer is read straight from the model's next-token distribution, so the probabilities are the model's own, not a number it was asked to write.
+- Every option gets a single-token label: letters for Choice (`A` to `U`, skipping `I` so a reply starting with the pronoun cannot count as an option), numbers from `1` for Score, `Yes`/`No` for Noul. The answer is read straight from the model's next-token distribution, so the probabilities are the model's own, not a number it was asked to write.
 - Questions are evaluated independently and concurrently. None of them sees another's answer.
 - Every prompt starts with the same system message and state, so Ollama reuses its prompt cache when several questions share a state. With `qwen3:4b-instruct`, each extra question about a 1,500-token state costs about 110 ms.
 - `confidence` is 1 when all probability sits on one answer and 0 when it is spread evenly. The formulas are in [docs/SPEC.md](docs/SPEC.md#6-confidence).
@@ -154,11 +154,11 @@ Measured with `nex eval` on the 170 labeled cases in [`evals/data`](evals/data) 
 
 | | `qwen3.5:9b` (default) | `qwen3:4b-instruct` |
 | - | - | - |
-| Accuracy, all | **85.9%** | 78.2% |
-| Choice / Score / Noul | 91.7% / 72.0% / 91.7% | 88.3% / 58.0% / 85.0% |
-| Calibration error (ECE), raw → calibrated | 0.051 → 0.043 | 0.211 → 0.073 |
-| Log loss, raw → calibrated | 0.316 → 0.330 | 2.529 → 0.493 |
-| Latency per question, new state (p50) | 876 ms | **245 ms** |
+| Accuracy, all | **88.2%** | 79.4% |
+| Choice / Score / Noul | 91.7% / 80.0% / 91.7% | 88.3% / 62.0% / 85.0% |
+| Calibration error (ECE), raw → calibrated | 0.074 → 0.037 | 0.203 → 0.078 |
+| Log loss, raw → calibrated | 0.313 → 0.325 | 2.319 → 0.476 |
+| Latency per question, new state (p50) | 841 ms | **180 ms** |
 | Each extra question on a 1,500-token state | about 1.3 s (partial cache reuse) | **about 110 ms** |
 | Download | 6.6 GB | 2.5 GB |
 
@@ -166,14 +166,38 @@ How often each model is right when it is confident, after calibration:
 
 | Top probability | `qwen3.5:9b` coverage, accuracy | `qwen3:4b-instruct` coverage, accuracy |
 | - | - | - |
-| ≥ 0.7 | 82%, 93.6% | 76%, 88.5% |
-| ≥ 0.9 | 68%, 97.4% | 49%, 97.6% |
+| ≥ 0.7 | 82%, 94.2% | 79%, 86.7% |
+| ≥ 0.9 | 71%, 96.7% | 49%, 97.6% |
 
-`qwen3.5:9b` is the default because it is more accurate and already close to calibrated. `qwen3:4b-instruct` is about three times faster and makes full use of the prompt cache. Its raw probabilities sit at 0 or 1, so it relies on the shipped calibration, and it is weak on Score questions. Switch with `NEX_BACKEND_MODEL=qwen3:4b-instruct`.
+`qwen3.5:9b` is the default because it is more accurate and already close to calibrated. `qwen3:4b-instruct` is three to five times faster and makes full use of the prompt cache. Its raw probabilities sit at 0 or 1, so it relies on the shipped calibration, and it is weak on Score questions. Switch with `NEX_BACKEND_MODEL=qwen3:4b-instruct`.
 
 Use the 9B for Score questions. The 4B gives a near-certain Score answer whether it is right or off by three levels, so its calibrated Score probabilities are spread over every level and its `score` values sit toward the middle of the scale. When code needs one level from the 4B, take the most likely entry of `probabilities` instead of rounding `score`.
 
-Most errors on both models are arithmetic and multi-step logic: time zones, sums against a limit, date windows in a policy. A one-token decision has no room to calculate. Compute those values in code and put the result in the state.
+Most errors on both models are arithmetic and multi-step logic: time zones, sums against a limit, date windows in a policy. TypeSafe's Jev answers most of these correctly, so this is a limit of these small open models rather than of one-token decisions. With Nex, compute such values in code and put the result in the state.
+
+## Compared with Jev
+
+The same 170 cases sent to TypeSafe's hosted Jev (`jev-1.13.0`) on 2026-10-02 with [`evals/compare_jev.py`](evals/compare_jev.py). Nex calibration numbers are held out, as above.
+
+| | Jev | Nex `qwen3.5:9b` | Nex `qwen3:4b-instruct` |
+| - | - | - | - |
+| Accuracy, all | **97.1%** | 88.2% | 79.4% |
+| Choice / Score / Noul | 95.0% / 98.0% / 98.3% | 91.7% / 80.0% / 91.7% | 88.3% / 62.0% / 85.0% |
+| Calibration error (ECE) | 0.023 | 0.037 | 0.078 |
+| Top probability ≥ 0.9: coverage, accuracy | 87%, 100% | 71%, 96.7% | 49%, 97.6% |
+| Same top answer as Jev | | 91% | 81% |
+| Latency (p50) | 345 ms per request, hosted, network included | 841 ms per question, local | 180 ms per question, local |
+
+Head to head with the 9B, Jev is right and Nex wrong on 15 cases, Nex is right and Jev wrong on none, and both are wrong on the same 5: two time-zone questions, an expense-policy exception, a booking-eligibility rule, and an NDA clause. Jev's lead is largest on Score questions and on cases that need arithmetic. Nex runs offline on your machine and costs nothing per call, Jev is the more accurate decision model.
+
+To rerun it, put your TypeSafe key in `TYPESAFE_API_KEY`:
+
+```sh
+nex eval --model qwen3.5:9b --out nex-results.json
+python3 evals/compare_jev.py nex-results.json
+```
+
+Jev's answers are cached in `evals/results/jev-answers.json`, so a rerun only asks Jev about new or changed cases. The 170 cases were written for this project, so treat the numbers as a comparison on one small set, not as a general benchmark.
 
 ## Calibration
 
