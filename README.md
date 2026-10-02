@@ -45,9 +45,9 @@ calibrate: p_i ** (1 / T), with T fitted per model and question type
 typed answer: choice / score / noul, probabilities, confidence
 ```
 
-- Every option gets a single-token label: letters for Choice (`A` to `U`, skipping `I` so a reply starting with the pronoun cannot count as an option), numbers from `1` for Score, `Yes`/`No` for Noul. The answer is read straight from the model's next-token distribution, so the probabilities are the model's own, not a number it was asked to write.
+- Every option gets a single-token label: letters for Choice (`A` to `U`, skipping `I` so a reply starting with the pronoun cannot count as an option), numbers from `1` for Score (`0` to `9` for a 10-level Score), `Yes`/`No` for Noul. The answer is read straight from the model's next-token distribution, so the probabilities are the model's own, not a number it was asked to write.
 - Questions are evaluated independently and concurrently. None of them sees another's answer.
-- Every prompt starts with the same system message and state, so Ollama reuses its prompt cache when several questions share a state. With `qwen3:4b-instruct`, each extra question about a 1,500-token state costs about 110 ms.
+- Every prompt starts with the same system message and state, so Ollama reuses its prompt cache when several questions share a state. With `qwen3:4b-instruct`, each extra question about a 1,500-token state costs about 75 ms.
 - `confidence` is 1 when all probability sits on one answer and 0 when it is spread evenly. The formulas are in [docs/SPEC.md](docs/SPEC.md#6-confidence).
 - Calibration fits one temperature per model and question type on labeled examples, so that answers given 0.8 are right about 80% of the time. See [Calibration](#calibration).
 
@@ -150,7 +150,7 @@ Each script runs against your local Ollama and honors `NEX_BACKEND_MODEL`.
 
 ## Choosing a model
 
-Measured with `nex eval` on the 170 labeled cases in [`evals/data`](evals/data) (60 Choice, 50 Score, 60 Noul) on an Apple Silicon Mac with 24 GB through Ollama's Metal backend. Calibrated numbers are held out: each half of the data is scored with temperatures fitted on the other half.
+Measured with `nex eval` on the 170 labeled cases in [`evals/data`](evals/data) (60 Choice, 50 Score, 60 Noul) on an Apple Silicon Mac with 24 GB through Ollama's Metal backend. Calibrated numbers are held out: each half of the data is scored with temperatures fitted on the other half. The Score prompt format (levels numbered from 1) was chosen after looking at errors on these same cases, so Score accuracy is not a held-out measure of that choice.
 
 | | `qwen3.5:9b` (default) | `qwen3:4b-instruct` |
 | - | - | - |
@@ -159,7 +159,7 @@ Measured with `nex eval` on the 170 labeled cases in [`evals/data`](evals/data) 
 | Calibration error (ECE), raw → calibrated | 0.074 → 0.037 | 0.203 → 0.078 |
 | Log loss, raw → calibrated | 0.313 → 0.325 | 2.319 → 0.476 |
 | Latency per question, new state (p50) | 841 ms | **180 ms** |
-| Each extra question on a 1,500-token state | about 1.3 s (partial cache reuse) | **about 110 ms** |
+| Each extra question on a 1,500-token state | about 1.3 s (partial cache reuse) | **about 75 ms** |
 | Download | 6.6 GB | 2.5 GB |
 
 How often each model is right when it is confident, after calibration:
@@ -190,6 +190,8 @@ The same 170 cases sent to TypeSafe's hosted Jev (`jev-1.13.0`) on 2026-10-02 wi
 
 Head to head with the 9B, Jev is right and Nex wrong on 15 cases, Nex is right and Jev wrong on none, and both are wrong on the same 5: two time-zone questions, an expense-policy exception, a booking-eligibility rule, and an NDA clause. Jev's lead is largest on Score questions and on cases that need arithmetic. Nex runs offline on your machine and costs nothing per call, Jev is the more accurate decision model.
 
+Steering the 4B toward Jev without training was tested on a held-out half of the cases. Rewording the prompt, averaging several prompt variants, and calibration fitted to Jev's distributions did not beat the plain prompt beyond noise, because the 4B's answers are too peaked to move. Letting it write a short line of working before the answer did help, raising agreement with Jev on that half from 79% to 91%, but at about 800 ms per question. That is the same agreement and latency the 9B reaches with a plain one-token answer, so the 9B is the simpler choice, and Nex keeps one forward pass per question.
+
 To rerun it, put your TypeSafe key in `TYPESAFE_API_KEY`:
 
 ```sh
@@ -197,7 +199,7 @@ nex eval --model qwen3.5:9b --out nex-results.json
 python3 evals/compare_jev.py nex-results.json
 ```
 
-Jev's answers are cached in `evals/results/jev-answers.json`, so a rerun only asks Jev about new or changed cases. The 170 cases were written for this project, so treat the numbers as a comparison on one small set, not as a general benchmark.
+The first run asks Jev about all 170 cases. Its answers are cached locally in `evals/results/jev-answers.json`, which is not committed, so later runs only ask Jev about new or changed cases. The 170 cases were written for this project, so treat the numbers as a comparison on one small set, not as a general benchmark.
 
 ## Calibration
 

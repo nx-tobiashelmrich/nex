@@ -1,10 +1,11 @@
 """Turn (state, question) into a chat prompt whose next token is the answer.
 
-Every option gets a single-token label (the letters A to U without I for
-Choice, the numbers 1 to n for Score, Yes/No for Noul). I is skipped because
-a reply that starts with the pronoun "I" would otherwise count as that
-option. Nex never samples: it reads the backend's next-token log-probabilities at the answer
-position and maps tokens back to labels.
+Every option gets a single-token label: the letters A to U without I for
+Choice, the numbers 1 to n for Score (0 to 9 for a 10-level Score), and
+Yes/No for Noul. I is skipped because a reply that starts with the pronoun
+"I" would otherwise count as that option. Nex never samples: it reads the
+backend's next-token log-probabilities at the answer position and maps
+tokens back to labels.
 
 Each prompt starts with the same system message and state, so the backend
 can reuse its prompt cache for that prefix and only process the question

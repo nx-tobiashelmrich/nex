@@ -141,14 +141,14 @@ For each question, Nex:
 
 2. **Labels the options with single tokens.**
    - Choice: `A B C D E F G H J K L M N O P Q R S T U`. There is no `I`, because a reply that starts with the pronoun "I" would otherwise count as an option. Option lines read `A) name: description`, or `A) name` for a `null` description. The reply line lists the valid letters.
-   - Score: `1` to `n`, one per level, lines `1) description`. Models read numbers from 1 more reliably than from 0, which made them answer one level too high. A 10-level Score does not fit the digits 1 to 9, so it uses `0` to `9` and the reply line starts with "Levels are numbered from 0.". Either way, level `i` in the response (`legend`, `probabilities`) is the `i`-th level counted from 0.
+   - Score: `1` to `n`, one per level, lines `1) description`. On the bundled eval set, labels from 0 made qwen3.5:9b answer one level too high in 9 of its 14 Score errors, and labels from 1 removed most of those. A 10-level Score does not fit the digits 1 to 9, so it uses `0` to `9` and the reply line starts with "Levels are numbered from 0.". Either way, level `i` in the response (`legend`, `probabilities`) is the `i`-th level counted from 0.
    - Noul: `Yes` and `No`, followed by the true and false criteria when given.
 
 3. **Reads one next-token distribution.** Nex asks the backend for a single forward pass and the 20 most likely first tokens of the reply with their log-probabilities. Nothing is sampled or generated. The Ollama request is `POST /api/chat` with `stream: false`, `logprobs: true`, `top_logprobs: 20`, `think: false`, `truncate: false`, `keep_alive: "30m"`, and options `num_predict: 1`, `temperature: 0`, `num_ctx: NEX_NUM_CTX`. `think` is dropped for models that refuse it.
 
 4. **Folds spellings into labels.** Each candidate token is trimmed of whitespace and of trailing `)`, `.`, and `:`. Then:
    - Choice: a single ASCII letter, either case, that is one of the labels in use.
-   - Score: a single ASCII digit below the number of levels.
+   - Score: a single ASCII digit that is one of the labels in use (`1` to `n`, or `0` to `9` for a 10-level Score). It maps to the level it labels, as in step 2.
    - Noul: `yes`, `y`, or `true` count as yes, and `no`, `n`, or `false` count as no, in any case.
 
    The probabilities of all spellings of a label are added up. Other tokens are ignored.
